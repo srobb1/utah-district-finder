@@ -2,7 +2,7 @@
 
 A free, single-page civic tool that looks up every political district for any Utah address — congressional, state legislative, school board, precinct, county, and municipality — in one place.
 
-**Live site:** [yourusername.github.io/your-repo-name](https://yourusername.github.io/your-repo-name)
+**Live site:** ([https://yourusername.github.io/your-repo-name](https://srobb1.github.io/utah-district-finder/))
 
 ---
 
