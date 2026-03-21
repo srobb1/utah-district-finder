@@ -1,8 +1,17 @@
 # Utah District Finder
 
-A free, single-page civic tool that looks up every political district for any Utah address — congressional, state legislative, school board, precinct, county, and municipality — in one place.
+A free civic tool that looks up every political district for any Utah address — congressional, state legislative, school board, precinct, county, and municipality — in one place.
 
-**Live site:** ([https://srobb1.github.io/utah-district-finder/](https://srobb1.github.io/utah-district-finder/))
+**Live site:** [srobb1.github.io/utah-district-finder](https://srobb1.github.io/utah-district-finder)
+
+---
+
+## Tools
+
+| Tool | Description |
+|---|---|
+| [index.html](https://srobb1.github.io/utah-district-finder/) | Single address lookup |
+| [batch.html](https://srobb1.github.io/utah-district-finder/batch.html) | Batch CSV lookup — upload a list, download results |
 
 ---
 
@@ -20,11 +29,31 @@ Enter any Utah street address and instantly see:
 
 Each result links directly to the relevant official roster or representative page. The app also supports address autocomplete and GPS-based location lookup.
 
+The **batch tool** accepts a CSV in any of these formats and auto-detects which one you're using:
+
+| Format | Columns |
+|---|---|
+| A — Single column | `address` — e.g. `3572 N Morgan Valley Dr, Morgan, UT 84050` |
+| B — Street + zone | `street`, `city` or `zip` |
+| C — Split street | `street_number`, `street_name`, `city`, `zip` |
+
+Results can be downloaded as CSV or TSV with all district columns appended to your original data.
+
 ---
 
 ## Why this exists
 
 Finding your political districts in Utah requires visiting multiple different websites, none of which are easy to use. This tool consolidates everything into a single address lookup backed by authoritative state data.
+
+---
+
+## API key
+
+The live site at `srobb1.github.io` uses a baked-in UGRC API key registered to that domain. Visitors don't need their own key.
+
+If you fork this repo and deploy it elsewhere, the app will automatically prompt users for their own UGRC API key registered to your domain. Keys are free at [developer.mapserv.utah.gov](https://developer.mapserv.utah.gov) and take about 2 minutes to create. Update the `OWNER_DOMAIN` and `OWNER_API_KEY` constants near the top of `index.html` and `batch.html` to use your own key silently on your domain.
+
+> **Note on the batch tool and API usage:** Each address in a batch lookup generates up to 7 API calls (1 geocode + 6 district queries). The batch tool throttles requests to ~4 addresses per second to be courteous to UGRC's free service. For very large lists (500+ addresses), consider emailing UGRC at `ugrc-developers@utah.gov` to give them a heads up. They've noted the API is not rate limited but ask users to be fair.
 
 ---
 
@@ -48,57 +77,69 @@ Geocoding uses the [UGRC geocoding API](https://api.mapserv.utah.gov). Address a
 
 ## Running locally
 
-This is a single HTML file with no build step or dependencies.
+No build step or dependencies required — just two HTML files.
 
 1. Clone the repo:
    ```bash
-   git clone https://github.com/yourusername/your-repo-name.git
-   cd your-repo-name
+   git clone https://github.com/srobb1/utah-district-finder.git
+   cd utah-district-finder
    ```
 
-2. Serve it locally (required — opening the file directly will cause CORS errors):
+2. Serve it locally (required — opening files directly causes CORS errors):
    ```bash
    python3 -m http.server 8000
    ```
 
 3. Open [http://localhost:8000](http://localhost:8000) in your browser.
 
-4. Get a free UGRC API key at [developer.mapserv.utah.gov](https://developer.mapserv.utah.gov) and register it to `localhost` for local development, or your GitHub Pages URL for production.
+4. Get a free UGRC API key at [developer.mapserv.utah.gov](https://developer.mapserv.utah.gov), register it to `localhost`, and paste it when prompted.
 
 ---
 
 ## Embedding on another site
 
-The app can be embedded as an iframe on any website:
+Both tools can be embedded as iframes:
 
 ```html
+<!-- Single address lookup -->
 <iframe
-  src="https://yourusername.github.io/your-repo-name"
+  src="https://srobb1.github.io/utah-district-finder/"
   width="100%"
   height="800"
   frameborder="0">
 </iframe>
+
+<!-- Batch lookup -->
+<iframe
+  src="https://srobb1.github.io/utah-district-finder/batch.html"
+  width="100%"
+  height="900"
+  frameborder="0">
+</iframe>
 ```
+
+When embedded on another domain, visitors will be prompted for their own UGRC API key registered to that domain.
 
 ---
 
 ## Deployment
 
-This site is hosted on **GitHub Pages** for free. Any push to the `main` branch automatically deploys.
+Hosted on **GitHub Pages** for free. Any push to `main` automatically deploys.
 
 To deploy your own copy:
 1. Fork this repo
 2. Enable GitHub Pages in Settings → Pages → Deploy from branch → main
-3. Get a UGRC API key registered to your GitHub Pages URL
-4. Update `DEFAULT_ADDRESS` in `index.html` if desired
+3. Get a UGRC API key registered to your GitHub Pages URL (e.g. `yourname.github.io`)
+4. Update `OWNER_DOMAIN` and `OWNER_API_KEY` in both `index.html` and `batch.html`
+5. Optionally set `DEFAULT_ADDRESS` in `index.html` to pre-fill your own address
 
 ---
 
 ## If something breaks
 
-District boundary data occasionally changes table names after redistricting. The **About This Data** section at the bottom of the app lists every table name and links directly to the UGRC product page for each layer. The debug log (also at the bottom) shows raw API responses.
+District boundary data occasionally changes table names after redistricting. The **About This Data** section at the bottom of the app lists every table name and links directly to the UGRC product page for each layer. The debug log (also at the bottom of the single address tool) shows raw API responses.
 
-If a district returns "Not found," compare the table names in `index.html` against the current UGRC SGID documentation.
+If a district returns "Not found," compare the table names in `index.html` against the current UGRC SGID documentation at [gis.utah.gov/products/sgid/political](https://gis.utah.gov/products/sgid/political/).
 
 ---
 
@@ -110,7 +151,7 @@ Issues and pull requests welcome. If you extend this for another state or add fe
 
 ## License
 
-MIT © 2026 [Your Name]
+MIT © 2026 Sofia Robb
 
 ---
 
