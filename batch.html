@@ -379,7 +379,7 @@
 
   // ── CONFIG ────────────────────────────────────────────────────────────────────
   const OWNER_DOMAIN  = 'srobb1.github.io';
-  const OWNER_API_KEY = 'ugrc-a2016088728543';
+  const OWNER_API_KEY = 'ugrc-2ab79aae134042';
   const isOwnerDomain = window.location.hostname === OWNER_DOMAIN;
   const RATE_MS       = 250; // ms between requests (~4/sec — courteous to UGRC)
   const BASE          = 'https://api.mapserv.utah.gov/api/v1';
@@ -796,11 +796,20 @@
     URL.revokeObjectURL(url);
   }
 
-  // ── INIT ──────────────────────────────────────────────────────────────────────
+   // ── INIT ──────────────────────────────────────────────────────────────────────
   window.addEventListener('DOMContentLoaded', () => {
     const keySection = document.getElementById('key-section');
     if (isOwnerDomain) {
       keySection.style.display = 'none';
     } else if (apiKey) {
       document.getElementById('api-key-input').value = apiKey;
-      keySection.style.display =A
+      keySection.style.display = 'none';
+    } else {
+      keySection.style.display = 'block';
+      const domainEl = document.getElementById('current-domain');
+      if (domainEl) domainEl.textContent = window.location.hostname || 'your domain';
+    }
+  });
+</script>
+</body>
+</html>
