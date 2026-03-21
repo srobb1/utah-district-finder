@@ -311,6 +311,10 @@
 
     <div id="file-warn" class="warn-box" style="display:none;"></div>
 
+    <div style="margin-top:1rem;padding:.75rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Mono',monospace;font-size:.7rem;color:var(--muted);line-height:1.7;">
+      <strong style="color:var(--ink);">⏱ About processing speed:</strong> Each address requires up to 7 API calls to the Utah UGRC service. To be courteous to this free public API, requests are throttled to ~4 addresses per second. A list of 50 addresses takes about 15 seconds. For very large lists (500+) consider emailing <a href="mailto:ugrc-developers@utah.gov" style="color:var(--accent);">ugrc-developers@utah.gov</a> to give them a heads up.
+    </div>
+
     <button class="btn-primary" id="run-btn" onclick="runBatch()" disabled>
       Look Up Districts for All Addresses
     </button>
