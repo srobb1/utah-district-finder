@@ -39,8 +39,17 @@
     .masthead-rule::before, .masthead-rule::after {
       content: ''; flex: 1; height: 1px; background: var(--border);
     }
+    .header-row {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    }
     h1 { font-size: clamp(2rem,6vw,3rem); font-weight:700; line-height:1.1; letter-spacing:-.02em; }
     h1 em { font-style:italic; color:var(--accent); }
+    .batch-link {
+      font-family: 'DM Mono', monospace; font-size: .7rem; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted); text-decoration: none;
+      white-space: nowrap;
+    }
+    .batch-link:hover { color: var(--accent); }
     .subtitle { margin-top:.5rem; font-style:italic; color:var(--muted); font-size:.95rem; }
 
     /* KEY BANNER */
@@ -252,10 +261,11 @@
 
   <header>
     <div class="masthead-rule"><span>Utah Civic Tools</span></div>
-    <h1>Find Your <em>Districts</em></h1>
-    <p class="subtitle">Enter any Utah address to see every political district you belong to.
-      &nbsp;·&nbsp; <a href="batch.html" style="color:var(--accent);font-style:normal;font-size:.85rem;">Batch lookup →</a>
-    </p>
+    <div class="header-row">
+      <h1>Find Your <em>Districts</em></h1>
+      <a class="batch-link" href="batch.html">Batch lookup →</a>
+    </div>
+    <p class="subtitle">Enter any Utah address to see every political district you belong to.</p>
   </header>
 
   <div id="key-section">
