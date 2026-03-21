@@ -268,18 +268,34 @@
   <div class="card">
     <div class="card-title">Step 1 — Prepare your CSV</div>
     <p style="font-size:.85rem;color:var(--muted);margin-bottom:.85rem;line-height:1.6;">
-      Your CSV must have a header row with these column names (case-insensitive, any order):
+      The app auto-detects your column format. Any of these work:
     </p>
-    <div class="format-spec">
-      <div class="col-chip"><span class="col-num">col A</span>street_number</div>
-      <div class="col-chip"><span class="col-num">col B</span>street_name</div>
-      <div class="col-chip"><span class="col-num">col C</span>city</div>
-      <div class="col-chip"><span class="col-num">col D</span>state</div>
-      <div class="col-chip"><span class="col-num">col E</span>zip</div>
+
+    <div style="display:grid;gap:.6rem;margin-bottom:1rem;">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .85rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;">Format A — Single address column</div>
+        <code style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--accent);">address</code>
+        <span style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);margin-left:.5rem;">e.g. "3572 N Morgan Valley Dr, Morgan, UT 84050"</span>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .85rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;">Format B — Street + Zone columns</div>
+        <code style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--accent);">street, city</code>
+        <span style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);margin-left:.5rem;">or</span>
+        <code style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--accent);margin-left:.5rem;">street, zip</code>
+        <span style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);margin-left:.5rem;">e.g. "3572 N Morgan Valley Dr", "84050"</span>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.6rem .85rem;">
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;">Format C — Split street columns</div>
+        <code style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--accent);">street_number, street_name, city, zip</code>
+        <span style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);margin-left:.5rem;">e.g. "3572", "N Morgan Valley Dr", "Morgan", "84050"</span>
+      </div>
     </div>
+
     <div class="sample-row">
       <span class="sample-label">Need a template?</span>
-      <button class="btn-sample" onclick="downloadTemplate()">Download Sample CSV</button>
+      <button class="btn-sample" onclick="downloadTemplate('A')">Format A</button>
+      <button class="btn-sample" onclick="downloadTemplate('B')">Format B</button>
+      <button class="btn-sample" onclick="downloadTemplate('C')">Format C</button>
     </div>
 
     <div class="card-title" style="margin-top:1.25rem;">Step 2 — Upload your file</div>
@@ -364,16 +380,30 @@
   ];
 
   // ── FILE HANDLING ─────────────────────────────────────────────────────────────
-  let parsedRows = []; // { original, street, zone }
-  let results    = []; // { original, street, zone, matched, districts, error }
-
-  const REQUIRED_COLS = ['street_number', 'street_name', 'city', 'zip'];
+  let parsedRows = [];
+  let results    = [];
 
   function handleFile(file) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = e => parseCSV(e.target.result);
     reader.readAsText(file);
+  }
+
+  function detectFormat(header) {
+    const h = header.map(c => c.toLowerCase().replace(/\s+/g, '_'));
+    // Format A: single address column
+    if (h.some(c => c === 'address' || c === 'full_address' || c === 'full address'))
+      return 'A';
+    // Format B: street + city or zip
+    if (h.some(c => c === 'street' || c === 'street_address') &&
+        h.some(c => c === 'city' || c === 'zip' || c === 'zipcode' || c === 'postal_code'))
+      return 'B';
+    // Format C: split street_number + street_name
+    if (h.some(c => c.includes('number') || c.includes('num') || c === 'house') &&
+        h.some(c => c.includes('name') || c.includes('road') || c.includes('street_name')))
+      return 'C';
+    return null;
   }
 
   function parseCSV(text) {
@@ -383,44 +413,64 @@
     parsedRows = [];
 
     const lines = text.trim().split(/\r?\n/);
-    if (lines.length < 2) {
-      showWarn('File appears empty or has no data rows.');
+    if (lines.length < 2) { showWarn('File appears empty or has no data rows.'); return; }
+
+    const header  = splitCSVLine(lines[0]).map(h => h.trim().toLowerCase().replace(/\s+/g, '_'));
+    const format  = detectFormat(header);
+
+    if (!format) {
+      showWarn(`Could not detect address format. Make sure your header row has columns like: "address", or "street"+"city"/"zip", or "street_number"+"street_name"+"city"/"zip".`);
       return;
     }
 
-    // Parse header
-    const header = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_'));
+    // Build index map
     const idx = {};
-    REQUIRED_COLS.forEach(col => {
-      const i = header.findIndex(h => h === col || h.includes(col.split('_')[0]));
-      idx[col] = i;
-    });
+    header.forEach((h, i) => idx[h] = i);
+    const find = (...names) => {
+      for (const n of names) {
+        const key = Object.keys(idx).find(k => k === n || k.includes(n));
+        if (key !== undefined) return idx[key];
+      }
+      return -1;
+    };
 
-    const missing = REQUIRED_COLS.filter(c => idx[c] === -1 || idx[c] === undefined);
-    if (missing.length) {
-      showWarn(`Missing required columns: ${missing.join(', ')}. Check your header row.`);
-      return;
-    }
-
-    // Parse data rows
     const dataLines = lines.slice(1).filter(l => l.trim());
-    dataLines.forEach((line, i) => {
-      const cols   = splitCSVLine(line);
-      const num    = (cols[idx['street_number']] || '').trim();
-      const name   = (cols[idx['street_name']]   || '').trim();
-      const city   = (cols[idx['city']]           || '').trim();
-      const zip    = (cols[idx['zip']]            || '').trim();
-      const street = `${num} ${name}`.trim();
-      const zone   = zip || city;
-      parsedRows.push({ original: cols, street, zone, city, zip });
+    dataLines.forEach(line => {
+      const cols = splitCSVLine(line);
+      const get  = i => (i >= 0 ? (cols[i] || '').trim() : '');
+      let street = '', zone = '';
+
+      if (format === 'A') {
+        // Parse "123 Main St, City, UT 84000" or "123 Main St, 84000"
+        const full  = get(find('address', 'full_address', 'full address'));
+        const parts = full.split(',').map(s => s.trim());
+        street = parts[0] || '';
+        // zone: prefer zip if last part looks like it, else city
+        const last = parts[parts.length - 1];
+        const zip  = last.match(/\b(\d{5})\b/);
+        zone = zip ? zip[1] : (parts[1] || '');
+      } else if (format === 'B') {
+        street = get(find('street', 'street_address', 'address'));
+        const city = get(find('city', 'town'));
+        const zip  = get(find('zip', 'zipcode', 'postal_code', 'postal'));
+        zone = zip || city;
+      } else if (format === 'C') {
+        const num  = get(find('street_number', 'number', 'house_number', 'num', 'house'));
+        const name = get(find('street_name', 'road', 'street', 'name'));
+        street = `${num} ${name}`.trim();
+        const city = get(find('city', 'town', 'municipality'));
+        const zip  = get(find('zip', 'zipcode', 'postal'));
+        zone = zip || city;
+      }
+
+      parsedRows.push({ original: cols, street, zone });
     });
 
-    if (!parsedRows.length) {
-      showWarn('No data rows found after the header.');
-      return;
-    }
+    if (!parsedRows.length) { showWarn('No data rows found after the header.'); return; }
 
-    renderPreview(header, lines.slice(1, 6));
+    // Show detected format
+    const fmtNames = { A: 'single address column', B: 'street + zone columns', C: 'split street columns' };
+    renderPreview(header, lines.slice(1, 6), `Auto-detected: Format ${format} (${fmtNames[format]})`);
     runBtn.disabled = !apiKey;
     if (!apiKey) showWarn('Please enter your UGRC API key above before running.');
   }
@@ -439,10 +489,18 @@
     return result;
   }
 
-  function renderPreview(header, sampleLines) {
+  function renderPreview(header, sampleLines, formatMsg) {
     const wrap  = document.getElementById('preview-wrap');
     const table = document.getElementById('preview-table');
     table.innerHTML = '';
+
+    // Format detection message
+    if (formatMsg) {
+      const msg = document.createElement('div');
+      msg.style.cssText = 'font-family:"DM Mono",monospace;font-size:.7rem;color:var(--accent);padding:.5rem .65rem;background:#eef3ec;border-bottom:1px solid var(--border);';
+      msg.textContent = '✓ ' + formatMsg;
+      wrap.insertBefore(msg, table);
+    }
 
     const thead = table.createTHead();
     const hrow  = thead.insertRow();
@@ -494,14 +552,29 @@
   });
 
   // ── SAMPLE TEMPLATE ───────────────────────────────────────────────────────────
-  function downloadTemplate() {
-    const csv = [
-      'street_number,street_name,city,state,zip',
-      '3572,North Morgan Valley Drive,Morgan,UT,84050',
-      '350,N State St,Salt Lake City,UT,84103',
-      '2549,Washington Blvd,Ogden,UT,84401',
-    ].join('\n');
-    triggerDownload(csv, 'utah-addresses-template.csv', 'text/csv');
+  function downloadTemplate(fmt) {
+    const templates = {
+      A: [
+        'address',
+        '3572 N Morgan Valley Dr, Morgan, UT 84050',
+        '350 N State St, Salt Lake City, UT 84103',
+        '2549 Washington Blvd, Ogden, UT 84401',
+      ],
+      B: [
+        'street,city,zip',
+        '3572 N Morgan Valley Dr,Morgan,84050',
+        '350 N State St,Salt Lake City,84103',
+        '2549 Washington Blvd,Ogden,84401',
+      ],
+      C: [
+        'street_number,street_name,city,state,zip',
+        '3572,N Morgan Valley Dr,Morgan,UT,84050',
+        '350,N State St,Salt Lake City,UT,84103',
+        '2549,Washington Blvd,Ogden,UT,84401',
+      ],
+    };
+    const csv = (templates[fmt] || templates['B']).join('\n');
+    triggerDownload(csv, `utah-addresses-format-${fmt}.csv`, 'text/csv');
   }
 
   // ── BATCH RUN ─────────────────────────────────────────────────────────────────
