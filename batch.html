@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Utah District Finder — Batch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:      #f4f1eb;
+      --ink:     #1e2420;
+      --muted:   #5a6358;
+      --accent:  #2d5a3d;
+      --accent2: #6b7f6e;
+      --card:    #faf9f5;
+      --border:  #cdd4c8;
+      --shadow:  rgba(30,36,32,0.08);
+      --radius:  4px;
+      --warn:    #8a4a00;
+      --warn-bg: #fff8ee;
+      --warn-border: #e8c97a;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Libre Baskerville', Georgia, serif;
+      background: var(--bg); color: var(--ink);
+      min-height: 100vh; padding: 2rem 1rem 4rem;
+    }
+
+    /* HEADER */
+    header {
+      max-width: 780px; margin: 0 auto 2.5rem;
+      border-bottom: 2px solid var(--ink); padding-bottom: 1.25rem;
+    }
+    .masthead-rule {
+      display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem;
+    }
+    .masthead-rule span {
+      font-family: 'DM Mono', monospace; font-size: .65rem;
+      letter-spacing: .18em; text-transform: uppercase; color: var(--muted);
+    }
+    .masthead-rule::before, .masthead-rule::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .header-row {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    }
+    h1 { font-size: clamp(1.6rem,5vw,2.4rem); font-weight: 700; line-height: 1.1; letter-spacing: -.02em; }
+    h1 em { font-style: italic; color: var(--accent); }
+    .back-link {
+      font-family: 'DM Mono', monospace; font-size: .7rem; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted); text-decoration: none;
+      white-space: nowrap;
+    }
+    .back-link:hover { color: var(--accent); }
+    .subtitle { margin-top: .5rem; font-style: italic; color: var(--muted); font-size: .9rem; }
+
+    /* KEY BANNER */
+    #key-section {
+      max-width: 780px; margin: 0 auto 2rem; background: #eef3ec;
+      border: 1px solid #c2d4bf; border-left: 4px solid var(--accent);
+      border-radius: var(--radius); padding: 1rem 1.25rem;
+    }
+    #key-section p { font-size: .85rem; color: #2a3d2e; margin-bottom: .75rem; }
+    #key-section a { color: var(--accent); font-weight: 700; }
+    .key-row { display: flex; gap: .5rem; }
+    .key-row input {
+      flex: 1; font-family: 'DM Mono', monospace; font-size: .8rem;
+      padding: .5rem .75rem; border: 1px solid #c2d4bf;
+      border-radius: var(--radius); background: #f4f8f3; color: var(--ink);
+    }
+    .key-row input:focus { outline: 2px solid var(--accent); }
+
+    /* CARD */
+    .card {
+      max-width: 780px; margin: 0 auto 1.5rem; background: var(--card);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.5rem; box-shadow: 0 2px 8px var(--shadow);
+    }
+    .card-title {
+      font-family: 'DM Mono', monospace; font-size: .7rem; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 1rem;
+    }
+
+    /* FORMAT SPEC */
+    .format-spec {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: .5rem; margin-bottom: 1rem;
+    }
+    .col-chip {
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: .4rem .6rem; font-family: 'DM Mono', monospace; font-size: .7rem;
+      color: var(--accent); text-align: center;
+    }
+    .col-chip .col-num { color: var(--muted); font-size: .6rem; display: block; margin-bottom: .15rem; }
+
+    /* FILE DROP */
+    .drop-zone {
+      border: 2px dashed var(--border); border-radius: var(--radius);
+      padding: 2rem; text-align: center; cursor: pointer;
+      transition: border-color .2s, background .2s; margin-bottom: 1rem;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent); background: #eef3ec;
+    }
+    .drop-zone input[type="file"] { display: none; }
+    .drop-icon { font-size: 2rem; margin-bottom: .5rem; }
+    .drop-label {
+      font-family: 'DM Mono', monospace; font-size: .78rem;
+      letter-spacing: .06em; color: var(--muted);
+    }
+    .drop-label strong { color: var(--accent); cursor: pointer; }
+
+    /* SAMPLE */
+    .sample-row {
+      display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+    }
+    .sample-label {
+      font-family: 'DM Mono', monospace; font-size: .65rem;
+      letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+    }
+    .btn-sample {
+      font-family: 'DM Mono', monospace; font-size: .7rem; letter-spacing: .06em;
+      text-transform: uppercase; padding: .35rem .8rem; background: none;
+      color: var(--accent); border: 1px solid var(--accent);
+      border-radius: var(--radius); cursor: pointer; transition: background .15s;
+    }
+    .btn-sample:hover { background: #eef3ec; }
+
+    /* PREVIEW TABLE */
+    .preview-wrap {
+      overflow-x: auto; margin-top: 1rem; border: 1px solid var(--border);
+      border-radius: var(--radius); display: none;
+    }
+    .preview-wrap.visible { display: block; }
+    table.preview {
+      width: 100%; border-collapse: collapse;
+      font-family: 'DM Mono', monospace; font-size: .72rem;
+    }
+    table.preview th {
+      background: var(--bg); padding: .45rem .65rem; text-align: left;
+      border-bottom: 2px solid var(--border); white-space: nowrap;
+      font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+    }
+    table.preview td {
+      padding: .4rem .65rem; border-bottom: 1px solid var(--border);
+      white-space: nowrap; color: var(--ink);
+    }
+    table.preview tr:last-child td { border-bottom: none; }
+    table.preview tr.header-row-highlight th { background: #e8f0e6; }
+
+    /* BUTTONS */
+    .btn-primary {
+      font-family: 'DM Mono', monospace; font-size: .85rem; letter-spacing: .1em;
+      text-transform: uppercase; padding: .8rem 1.5rem; background: var(--accent);
+      color: #fff; border: none; border-radius: var(--radius); cursor: pointer;
+      transition: background .15s; width: 100%; margin-top: 1rem;
+    }
+    .btn-primary:hover { background: #1e3f2a; }
+    .btn-primary:disabled { background: var(--muted); cursor: not-allowed; }
+    .btn-small {
+      font-family: 'DM Mono', monospace; font-size: .75rem; letter-spacing: .08em;
+      text-transform: uppercase; padding: .5rem 1rem; background: var(--accent);
+      color: #fff; border: none; border-radius: var(--radius); cursor: pointer;
+    }
+    .btn-small:hover { background: #1e3f2a; }
+
+    /* PROGRESS */
+    #progress-section { max-width: 780px; margin: 0 auto 1.5rem; display: none; }
+    #progress-section.visible { display: block; }
+    .progress-bar-wrap {
+      background: var(--border); border-radius: 99px; height: 8px;
+      overflow: hidden; margin-bottom: .6rem;
+    }
+    .progress-bar {
+      height: 100%; background: var(--accent); border-radius: 99px;
+      width: 0%; transition: width .3s ease;
+    }
+    .progress-label {
+      font-family: 'DM Mono', monospace; font-size: .72rem; color: var(--muted);
+      display: flex; justify-content: space-between;
+    }
+
+    /* RESULTS */
+    #results-section { max-width: 780px; margin: 0 auto; display: none; }
+    #results-section.visible { display: block; }
+    .results-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap;
+    }
+    .results-header h2 { font-size: 1.1rem; font-style: italic; }
+    .results-stats {
+      font-family: 'DM Mono', monospace; font-size: .72rem; color: var(--muted);
+    }
+    .results-stats .stat-good { color: var(--accent); font-weight: 700; }
+    .results-stats .stat-bad { color: #c0392b; font-weight: 700; }
+
+    .download-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .btn-download {
+      font-family: 'DM Mono', monospace; font-size: .75rem; letter-spacing: .08em;
+      text-transform: uppercase; padding: .5rem 1.1rem; background: var(--accent);
+      color: #fff; border: none; border-radius: var(--radius); cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-download:hover { background: #1e3f2a; }
+
+    .results-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+    table.results {
+      width: 100%; border-collapse: collapse;
+      font-family: 'DM Mono', monospace; font-size: .68rem;
+    }
+    table.results th {
+      background: var(--bg); padding: .45rem .6rem; text-align: left;
+      border-bottom: 2px solid var(--border); white-space: nowrap;
+      font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+      position: sticky; top: 0;
+    }
+    table.results td {
+      padding: .38rem .6rem; border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    table.results tr:last-child td { border-bottom: none; }
+    table.results tr.row-error td { color: #c0392b; background: #fff5f5; }
+    table.results td.cell-district { color: var(--accent); font-weight: 700; }
+    table.results td.cell-error { font-style: italic; color: #c0392b; }
+
+    /* WARN */
+    .warn-box {
+      background: var(--warn-bg); border: 1px solid var(--warn-border);
+      border-left: 4px solid var(--warn); border-radius: var(--radius);
+      padding: .75rem 1rem; font-size: .8rem; color: var(--warn); margin-top: 1rem;
+    }
+
+    footer {
+      max-width: 780px; margin: 3rem auto 0; padding-top: 1rem;
+      border-top: 1px solid var(--border); font-family: 'DM Mono', monospace;
+      font-size: .65rem; color: var(--muted); letter-spacing: .06em;
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem;
+    }
+    footer a { color: var(--muted); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="masthead-rule"><span>Utah Civic Tools</span></div>
+    <div class="header-row">
+      <h1>Batch <em>District Lookup</em></h1>
+      <a class="back-link" href="index.html">← Single Address</a>
+    </div>
+    <p class="subtitle">Upload a CSV of Utah addresses to append district information to each row.</p>
+  </header>
+
+  <!-- KEY BANNER -->
+  <div id="key-section">
+    <p>
+      This tool requires a <strong>Utah UGRC API key</strong> registered to your domain.
+      <a href="https://developer.mapserv.utah.gov/StartupGuide" target="_blank">Get your free key here</a>
+      — register it to <strong id="current-domain"></strong> and paste it below.
+    </p>
+    <div class="key-row">
+      <input type="text" id="api-key-input" placeholder="Paste your UGRC API key…" autocomplete="off" spellcheck="false" />
+      <button class="btn-small" onclick="saveKey()">Save</button>
+    </div>
+  </div>
+
+  <!-- UPLOAD CARD -->
+  <div class="card">
+    <div class="card-title">Step 1 — Prepare your CSV</div>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:.85rem;line-height:1.6;">
+      Your CSV must have a header row with these column names (case-insensitive, any order):
+    </p>
+    <div class="format-spec">
+      <div class="col-chip"><span class="col-num">col A</span>street_number</div>
+      <div class="col-chip"><span class="col-num">col B</span>street_name</div>
+      <div class="col-chip"><span class="col-num">col C</span>city</div>
+      <div class="col-chip"><span class="col-num">col D</span>state</div>
+      <div class="col-chip"><span class="col-num">col E</span>zip</div>
+    </div>
+    <div class="sample-row">
+      <span class="sample-label">Need a template?</span>
+      <button class="btn-sample" onclick="downloadTemplate()">Download Sample CSV</button>
+    </div>
+
+    <div class="card-title" style="margin-top:1.25rem;">Step 2 — Upload your file</div>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <input type="file" id="file-input" accept=".csv,.txt" onchange="handleFile(this.files[0])" />
+      <div class="drop-icon">📄</div>
+      <div class="drop-label">Drop your CSV here or <strong>click to browse</strong></div>
+    </div>
+
+    <div class="preview-wrap" id="preview-wrap">
+      <table class="preview" id="preview-table"></table>
+    </div>
+
+    <div id="file-warn" class="warn-box" style="display:none;"></div>
+
+    <button class="btn-primary" id="run-btn" onclick="runBatch()" disabled>
+      Look Up Districts for All Addresses
+    </button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="progress-section">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="progress-label">
+      <span id="progress-text">Starting…</span>
+      <span id="progress-count"></span>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-section">
+    <div class="results-header">
+      <h2>Results</h2>
+      <div class="results-stats" id="results-stats"></div>
+    </div>
+    <div class="download-row">
+      <button class="btn-download" onclick="downloadCSV()">⬇ Download CSV</button>
+      <button class="btn-download" onclick="downloadTSV()">⬇ Download TSV</button>
+    </div>
+    <div class="results-table-wrap">
+      <table class="results" id="results-table"></table>
+    </div>
+  </div>
+
+  <footer>
+    <span>Data: Utah UGRC / SGID — updated by the State of Utah</span>
+    <span><a href="https://gis.utah.gov" target="_blank">gis.utah.gov</a></span>
+  </footer>
+
+<script>
+  // ── CONFIG ────────────────────────────────────────────────────────────────────
+  const OWNER_DOMAIN  = 'srobb1.github.io';
+  const OWNER_API_KEY = 'ugrc-2ab79aae134042';
+  const isOwnerDomain = window.location.hostname === OWNER_DOMAIN;
+  const RATE_MS       = 250; // ms between requests (~4/sec — courteous to UGRC)
+  const BASE          = 'https://api.mapserv.utah.gov/api/v1';
+
+  let apiKey = isOwnerDomain
+    ? OWNER_API_KEY
+    : (localStorage.getItem('ugrc_api_key') || '');
+
+  function saveKey() {
+    const val = document.getElementById('api-key-input').value.trim();
+    if (!val) return;
+    apiKey = val;
+    localStorage.setItem('ugrc_api_key', val);
+    document.getElementById('key-section').style.display = 'none';
+  }
+
+  // ── DISTRICT LAYERS ───────────────────────────────────────────────────────────
+  const LAYERS = [
+    { label: 'Congressional',   table: 'political.district_combination_areas_2026', field: 'congress' },
+    { label: 'UT Senate',       table: 'political.district_combination_areas_2026', field: 'senate'   },
+    { label: 'UT House',        table: 'political.district_combination_areas_2026', field: 'house'    },
+    { label: 'School Board',    table: 'political.district_combination_areas_2026', field: 'school'   },
+    { label: 'Precinct ID',     table: 'political.vista_ballot_areas',              field: 'precinctid'},
+    { label: 'VISTA ID',        table: 'political.vista_ballot_areas',              field: 'vistaid'  },
+    { label: 'County',          table: 'boundaries.county_boundaries',              field: 'name'     },
+    { label: 'Municipality',    table: 'boundaries.municipal_boundaries',           field: 'name'     },
+  ];
+
+  // ── FILE HANDLING ─────────────────────────────────────────────────────────────
+  let parsedRows = []; // { original, street, zone }
+  let results    = []; // { original, street, zone, matched, districts, error }
+
+  const REQUIRED_COLS = ['street_number', 'street_name', 'city', 'zip'];
+
+  function handleFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => parseCSV(e.target.result);
+    reader.readAsText(file);
+  }
+
+  function parseCSV(text) {
+    const warn   = document.getElementById('file-warn');
+    const runBtn = document.getElementById('run-btn');
+    warn.style.display = 'none';
+    parsedRows = [];
+
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) {
+      showWarn('File appears empty or has no data rows.');
+      return;
+    }
+
+    // Parse header
+    const header = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_'));
+    const idx = {};
+    REQUIRED_COLS.forEach(col => {
+      const i = header.findIndex(h => h === col || h.includes(col.split('_')[0]));
+      idx[col] = i;
+    });
+
+    const missing = REQUIRED_COLS.filter(c => idx[c] === -1 || idx[c] === undefined);
+    if (missing.length) {
+      showWarn(`Missing required columns: ${missing.join(', ')}. Check your header row.`);
+      return;
+    }
+
+    // Parse data rows
+    const dataLines = lines.slice(1).filter(l => l.trim());
+    dataLines.forEach((line, i) => {
+      const cols   = splitCSVLine(line);
+      const num    = (cols[idx['street_number']] || '').trim();
+      const name   = (cols[idx['street_name']]   || '').trim();
+      const city   = (cols[idx['city']]           || '').trim();
+      const zip    = (cols[idx['zip']]            || '').trim();
+      const street = `${num} ${name}`.trim();
+      const zone   = zip || city;
+      parsedRows.push({ original: cols, street, zone, city, zip });
+    });
+
+    if (!parsedRows.length) {
+      showWarn('No data rows found after the header.');
+      return;
+    }
+
+    renderPreview(header, lines.slice(1, 6));
+    runBtn.disabled = !apiKey;
+    if (!apiKey) showWarn('Please enter your UGRC API key above before running.');
+  }
+
+  function splitCSVLine(line) {
+    // Handle quoted fields
+    const result = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+      else { cur += c; }
+    }
+    result.push(cur);
+    return result;
+  }
+
+  function renderPreview(header, sampleLines) {
+    const wrap  = document.getElementById('preview-wrap');
+    const table = document.getElementById('preview-table');
+    table.innerHTML = '';
+
+    const thead = table.createTHead();
+    const hrow  = thead.insertRow();
+    ['#', ...header].forEach(h => {
+      const th = document.createElement('th');
+      th.textContent = h;
+      hrow.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    sampleLines.forEach((line, i) => {
+      const row  = tbody.insertRow();
+      const cols = splitCSVLine(line);
+      const numTd = row.insertCell();
+      numTd.textContent = i + 1;
+      numTd.style.color = 'var(--muted)';
+      cols.forEach(c => {
+        const td = row.insertCell();
+        td.textContent = c.trim();
+      });
+    });
+
+    if (parsedRows.length > 5) {
+      const row = tbody.insertRow();
+      const td  = row.insertCell();
+      td.colSpan = header.length + 1;
+      td.textContent = `… and ${parsedRows.length - 5} more rows`;
+      td.style.cssText = 'color:var(--muted);font-style:italic;text-align:center;padding:.5rem;';
+    }
+
+    wrap.classList.add('visible');
+  }
+
+  function showWarn(msg) {
+    const el = document.getElementById('file-warn');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  // ── DRAG AND DROP ─────────────────────────────────────────────────────────────
+  const dropZone = document.getElementById('drop-zone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+
+  // ── SAMPLE TEMPLATE ───────────────────────────────────────────────────────────
+  function downloadTemplate() {
+    const csv = [
+      'street_number,street_name,city,state,zip',
+      '3572,North Morgan Valley Drive,Morgan,UT,84050',
+      '350,N State St,Salt Lake City,UT,84103',
+      '2549,Washington Blvd,Ogden,UT,84401',
+    ].join('\n');
+    triggerDownload(csv, 'utah-addresses-template.csv', 'text/csv');
+  }
+
+  // ── BATCH RUN ─────────────────────────────────────────────────────────────────
+  async function runBatch() {
+    if (!parsedRows.length || !apiKey) return;
+
+    results = [];
+    const runBtn  = document.getElementById('run-btn');
+    const progSec = document.getElementById('progress-section');
+    const resSec  = document.getElementById('results-section');
+    runBtn.disabled = true;
+    progSec.classList.add('visible');
+    resSec.classList.remove('visible');
+
+    const total = parsedRows.length;
+    let done = 0, succeeded = 0, failed = 0;
+
+    for (const row of parsedRows) {
+      updateProgress(done, total, row.street);
+      const result = await processRow(row);
+      results.push(result);
+      done++;
+      if (result.error) failed++; else succeeded++;
+      // Rate limiting — be courteous to UGRC
+      if (done < total) await sleep(RATE_MS);
+    }
+
+    updateProgress(total, total, 'Complete');
+    renderResults(succeeded, failed);
+    runBtn.disabled = false;
+  }
+
+  async function processRow(row) {
+    try {
+      // Geocode
+      const geoUrl = `${BASE}/geocode/${encodeURIComponent(row.street)}/${encodeURIComponent(row.zone)}?spatialReference=4326&apiKey=${apiKey}`;
+      const geoRes  = await fetch(geoUrl);
+      const geoData = await geoRes.json();
+
+      if (geoData.status !== 200 || !geoData.result) {
+        return { ...row, error: 'Address not found', matched: '', districts: {} };
+      }
+
+      const { x: lng, y: lat } = geoData.result.location;
+      const matched = geoData.result.matchAddress || '';
+
+      // Query all layers in parallel
+      const districtResults = await Promise.allSettled(
+        LAYERS.map(l => queryLayer(l, lng, lat))
+      );
+
+      const districts = {};
+      LAYERS.forEach((l, i) => {
+        const r = districtResults[i];
+        districts[l.label] = (r.status === 'fulfilled' && r.value) ? r.value : '';
+      });
+
+      return { ...row, matched, districts, error: null };
+    } catch (err) {
+      return { ...row, error: err.message, matched: '', districts: {} };
+    }
+  }
+
+  async function queryLayer(layer, lng, lat) {
+    const geometry = `point:[${lng},${lat}]`;
+    const url = `${BASE}/search/${encodeURIComponent(layer.table)}/${encodeURIComponent(layer.field)}` +
+                `?geometry=${encodeURIComponent(geometry)}&spatialReference=4326&apiKey=${apiKey}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.status === 200 && data.result?.length > 0) {
+      const key   = layer.field.toLowerCase();
+      let value   = data.result[0].attributes[key];
+      if (typeof value === 'string' && value === value.toUpperCase()) {
+        value = value.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+      }
+      return value;
+    }
+    return null;
+  }
+
+  // ── PROGRESS ──────────────────────────────────────────────────────────────────
+  function updateProgress(done, total, currentAddr) {
+    const pct  = total ? Math.round((done / total) * 100) : 0;
+    document.getElementById('progress-bar').style.width   = pct + '%';
+    document.getElementById('progress-text').textContent  = done < total ? `Processing: ${currentAddr}` : 'Done!';
+    document.getElementById('progress-count').textContent = `${done} / ${total}`;
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ── RENDER RESULTS ────────────────────────────────────────────────────────────
+  function renderResults(succeeded, failed) {
+    const resSec  = document.getElementById('results-section');
+    const table   = document.getElementById('results-table');
+    const stats   = document.getElementById('results-stats');
+    table.innerHTML = '';
+
+    stats.innerHTML = `<span class="stat-good">${succeeded} matched</span>` +
+      (failed ? ` &nbsp;·&nbsp; <span class="stat-bad">${failed} failed</span>` : '');
+
+    // Header
+    const districtCols = LAYERS.map(l => l.label);
+    const allCols = ['#', 'Input Address', 'Matched Address', ...districtCols, 'Error'];
+    const thead = table.createTHead();
+    const hrow  = thead.insertRow();
+    allCols.forEach(c => {
+      const th = document.createElement('th');
+      th.textContent = c;
+      hrow.appendChild(th);
+    });
+
+    // Rows
+    const tbody = table.createTBody();
+    results.forEach((r, i) => {
+      const row = tbody.insertRow();
+      if (r.error) row.classList.add('row-error');
+
+      const addCell = (text, cls) => {
+        const td = row.insertCell();
+        td.textContent = text || '';
+        if (cls) td.className = cls;
+        return td;
+      };
+
+      addCell(i + 1);
+      addCell(`${r.street}, ${r.zone}`);
+      addCell(r.matched);
+      districtCols.forEach(col => addCell(r.districts?.[col] || '', 'cell-district'));
+      addCell(r.error || '', 'cell-error');
+    });
+
+    resSec.classList.add('visible');
+  }
+
+  // ── DOWNLOADS ─────────────────────────────────────────────────────────────────
+  function buildCSVData(sep) {
+    const districtCols = LAYERS.map(l => l.label);
+    const headers = ['Input Street', 'Input Zone', 'Matched Address', ...districtCols, 'Error'];
+    const lines   = [headers.join(sep)];
+
+    results.forEach(r => {
+      const vals = [
+        csvEsc(`${r.street}, ${r.zone}`, sep),
+        csvEsc(r.zone, sep),
+        csvEsc(r.matched, sep),
+        ...districtCols.map(col => csvEsc(r.districts?.[col] || '', sep)),
+        csvEsc(r.error || '', sep),
+      ];
+      lines.push(vals.join(sep));
+    });
+    return lines.join('\n');
+  }
+
+  function csvEsc(val, sep) {
+    const s = String(val ?? '');
+    return (sep === ',' && (s.includes(',') || s.includes('"') || s.includes('\n')))
+      ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
+  function downloadCSV() {
+    triggerDownload(buildCSVData(','), 'utah-districts.csv', 'text/csv');
+  }
+
+  function downloadTSV() {
+    triggerDownload(buildCSVData('\t'), 'utah-districts.tsv', 'text/tab-separated-values');
+  }
+
+  function triggerDownload(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    const keySection = document.getElementById('key-section');
+    if (isOwnerDomain) {
+      keySection.style.display = 'none';
+    } else if (apiKey) {
+      document.getElementById('api-key-input').value = apiKey;
+      keySection.style.display = 'none';
+    } else {
+      keySection.style.display = 'block';
+      const domainEl = document.getElementById('current-domain');
+      if (domainEl) domainEl.textContent = window.location.hostname || 'your domain';
+    }
+  });
+</script>
+</body>
+</html>
