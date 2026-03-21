@@ -258,9 +258,10 @@
 
   <div id="key-section">
     <p>
-      This tool uses the free <strong>Utah UGRC API</strong> which requires a free API key.
+      This app requires a <strong>Utah UGRC API key</strong> registered to your domain.
       <a href="https://developer.mapserv.utah.gov/StartupGuide" target="_blank">Get your free key here</a>
-      — takes about 2 minutes. Paste it below to get started.
+      — register it to <strong id="current-domain"></strong> and paste it below.
+      Your key will be saved in your browser for future visits.
     </p>
     <div class="key-row">
       <input type="text" id="api-key-input" placeholder="Paste your UGRC API key…" autocomplete="off" spellcheck="false" />
@@ -490,7 +491,16 @@
   }
 
   // ── KEY ───────────────────────────────────────────────────────────────────────
-  let apiKey = 'UGRC-A2016088728543';
+  // If running on the official domain, use the baked-in key silently.
+  // Any other domain (forks, localhost, embeds) will prompt for their own key.
+  const OWNER_DOMAIN   = 'srobb1.github.io';
+  const OWNER_API_KEY  = 'ugrc-2ab79aae134042';
+  const isOwnerDomain  = window.location.hostname === OWNER_DOMAIN;
+
+  let apiKey = isOwnerDomain
+    ? OWNER_API_KEY
+    : (localStorage.getItem('ugrc_api_key') || '');
+
   function saveKey() {
     const val = document.getElementById('api-key-input').value.trim();
     if (!val) return;
@@ -742,9 +752,21 @@
 
   // ── INIT ──────────────────────────────────────────────────────────────────────
   window.addEventListener('DOMContentLoaded', () => {
-    if (apiKey) {
+    const keySection = document.getElementById('key-section');
+    if (isOwnerDomain) {
+      // Running on official site — hide key prompt entirely
+      keySection.style.display = 'none';
+    } else if (apiKey) {
+      // Fork/embed with a saved key — hide prompt, pre-fill input
       document.getElementById('api-key-input').value = apiKey;
-      document.getElementById('key-section').style.display = 'none';
+      keySection.style.display = 'none';
+    } else {
+      // Fork/embed with no key — show the prompt
+      keySection.style.display = 'block';
+    }
+    if (!isOwnerDomain) {
+      const domainEl = document.getElementById('current-domain');
+      if (domainEl) domainEl.textContent = window.location.hostname || 'your domain';
     }
     if (DEFAULT_ADDRESS) {
       document.getElementById('address-input').value = DEFAULT_ADDRESS;
