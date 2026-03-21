@@ -312,7 +312,7 @@
     <div id="file-warn" class="warn-box" style="display:none;"></div>
 
     <div style="margin-top:1rem;padding:.75rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Mono',monospace;font-size:.7rem;color:var(--muted);line-height:1.7;">
-      <strong style="color:var(--ink);">⏱ About processing speed:</strong> Each address requires up to 7 API calls to the Utah UGRC service. To be courteous to this free public API, requests are throttled to ~4 addresses per second. A list of 50 addresses takes about 15 seconds. For very large lists (500+) consider emailing <a href="mailto:ugrc-developers@utah.gov" style="color:var(--accent);">ugrc-developers@utah.gov</a> to give them a heads up.
+      <strong style="color:var(--ink);">⏱ About processing speed:</strong> Each address requires up to 7 API calls to the Utah UGRC service. To be courteous to this free public API, requests are throttled to ~4 addresses per second. A list of 50 addresses takes about 15 seconds. For very large lists (500+) consider emailing <a href="/cdn-cgi/l/email-protection#add8cadfce80c9c8dbc8c1c2ddc8dfdeedd8d9ccc583cac2db" style="color:var(--accent);"><span class="__cf_email__" data-cfemail="4e3b293c2d632a2b382b22213e2b3c3d0e3b3a2f2660292138">[email&#160;protected]</span></a> to give them a heads up.
     </div>
 
     <button class="btn-primary" id="run-btn" onclick="runBatch()" disabled>
@@ -346,12 +346,37 @@
     </div>
   </div>
 
+  <!-- DEBUG PANEL -->
+  <div style="max-width:780px;margin:2rem auto 0;">
+    <button onclick="toggleDebug()" id="debug-btn"
+      style="font-family:'DM Mono',monospace;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;background:none;border:1px solid var(--border);padding:.4rem .8rem;border-radius:4px;cursor:pointer;color:var(--muted);">
+      ▶ Show Debug Log
+    </button>
+    <pre id="debug-log"
+      style="display:none;margin-top:.75rem;background:#1a1a18;color:#a8d8a8;font-family:'DM Mono',monospace;font-size:.68rem;padding:1rem;border-radius:4px;overflow-x:auto;white-space:pre-wrap;line-height:1.6;max-height:400px;overflow-y:auto;"></pre>
+  </div>
+
   <footer>
     <span>Data: Utah UGRC / SGID — updated by the State of Utah</span>
     <span><a href="https://gis.utah.gov" target="_blank">gis.utah.gov</a></span>
   </footer>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  // ── DEBUG ─────────────────────────────────────────────────────────────────────
+  let debugLines = [];
+  function dbg(msg) {
+    debugLines.push(msg);
+    const el = document.getElementById('debug-log');
+    if (el) el.textContent = debugLines.join('\n');
+  }
+  function toggleDebug() {
+    const log = document.getElementById('debug-log');
+    const btn = document.getElementById('debug-btn');
+    const shown = log.style.display !== 'none';
+    log.style.display = shown ? 'none' : 'block';
+    btn.textContent = (shown ? '▶' : '▼') + ' Show Debug Log';
+  }
+
   // ── CONFIG ────────────────────────────────────────────────────────────────────
   const OWNER_DOMAIN  = 'srobb1.github.io';
   const OWNER_API_KEY = 'ugrc-a2016088728543';
@@ -421,6 +446,10 @@
 
     const header  = splitCSVLine(lines[0]).map(h => h.trim().toLowerCase().replace(/\s+/g, '_'));
     const format  = detectFormat(header);
+    dbg(`=== FILE LOADED ===`);
+    dbg(`Header: ${header.join(', ')}`);
+    dbg(`Detected format: ${format || 'NONE'}`);
+    dbg(`Data rows: ${lines.length - 1}`);
 
     if (!format) {
       showWarn(`Could not detect address format. Make sure your header row has columns like: "address", or "street"+"city"/"zip", or "street_number"+"street_name"+"city"/"zip".`);
@@ -445,14 +474,17 @@
       let street = '', zone = '';
 
       if (format === 'A') {
-        // Parse "123 Main St, City, UT 84000" or "123 Main St, 84000"
         const full  = get(find('address', 'full_address', 'full address'));
         const parts = full.split(',').map(s => s.trim());
         street = parts[0] || '';
-        // zone: prefer zip if last part looks like it, else city
-        const last = parts[parts.length - 1];
-        const zip  = last.match(/\b(\d{5})\b/);
-        zone = zip ? zip[1] : (parts[1] || '');
+        // Search ALL parts for a zip code
+        let zip = '';
+        for (const part of parts) {
+          const m = part.match(/\b(\d{5})\b/);
+          if (m) { zip = m[1]; break; }
+        }
+        // Fall back to second part (city) if no zip found
+        zone = zip || (parts[1] || '').replace(/^[A-Z]{2}\s+/, '').trim() || parts[1] || '';
       } else if (format === 'B') {
         street = get(find('street', 'street_address', 'address'));
         const city = get(find('city', 'town'));
@@ -468,6 +500,7 @@
       }
 
       parsedRows.push({ original: cols, street, zone });
+      dbg(`Row ${parsedRows.length}: street="${street}" zone="${zone}"`);
     });
 
     if (!parsedRows.length) { showWarn('No data rows found after the header.'); return; }
@@ -586,6 +619,9 @@
     if (!parsedRows.length || !apiKey) return;
 
     results = [];
+    debugLines = [];
+    dbg(`=== BATCH RUN: ${parsedRows.length} addresses ===`);
+    dbg(`API key: ${apiKey.substring(0, 8)}...`);
     const runBtn  = document.getElementById('run-btn');
     const progSec = document.getElementById('progress-section');
     const resSec  = document.getElementById('results-section');
@@ -613,10 +649,16 @@
 
   async function processRow(row) {
     try {
-      // Geocode
+      if (!row.street || !row.zone) {
+        dbg(`SKIPPED: missing street or zone`);
+        return { ...row, error: 'Missing street or zone — check CSV format', matched: '', districts: {} };
+      }
       const geoUrl = `${BASE}/geocode/${encodeURIComponent(row.street)}/${encodeURIComponent(row.zone)}?spatialReference=4326&apiKey=${apiKey}`;
+      dbg(`\n--- GEOCODE: "${row.street}" / "${row.zone}" ---`);
+      dbg(geoUrl);
       const geoRes  = await fetch(geoUrl);
       const geoData = await geoRes.json();
+      dbg(`RESPONSE (${geoRes.status}): ${JSON.stringify(geoData)}`);
 
       if (geoData.status !== 200 || !geoData.result) {
         return { ...row, error: 'Address not found', matched: '', districts: {} };
@@ -761,13 +803,4 @@
       keySection.style.display = 'none';
     } else if (apiKey) {
       document.getElementById('api-key-input').value = apiKey;
-      keySection.style.display = 'none';
-    } else {
-      keySection.style.display = 'block';
-      const domainEl = document.getElementById('current-domain');
-      if (domainEl) domainEl.textContent = window.location.hostname || 'your domain';
-    }
-  });
-</script>
-</body>
-</html>
+      keySection.style.display =A
