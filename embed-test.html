@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Embed Test — Utah District Finder</title>
+  <style>
+    body {
+      font-family: Georgia, serif;
+      margin: 0; padding: 0;
+      background: #f0f0f0; color: #222;
+    }
+
+    /* Mock site header */
+    .mock-header {
+      background: #1a3a5c; color: #fff;
+      padding: 1rem 2rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .mock-header .logo {
+      font-size: 1.3rem; font-weight: bold; letter-spacing: -.01em;
+    }
+    .mock-header .logo span { opacity: .6; font-weight: normal; font-size: .9rem; }
+    .mock-nav {
+      background: #245080; padding: .5rem 2rem;
+      font-family: Arial, sans-serif; font-size: .82rem;
+      display: flex; gap: 1.5rem;
+    }
+    .mock-nav a { color: #cde; text-decoration: none; }
+    .mock-nav a:hover { color: #fff; }
+
+    /* Page layout */
+    .page-wrap {
+      max-width: 1100px; margin: 2rem auto; padding: 0 2rem;
+      display: grid; grid-template-columns: 1fr 340px; gap: 2rem; align-items: start;
+    }
+
+    /* Main content */
+    .main-content h1 {
+      font-size: 1.6rem; margin-bottom: .5rem; color: #1a3a5c;
+    }
+    .main-content p {
+      line-height: 1.7; color: #444; margin-bottom: 1rem; font-size: .95rem;
+    }
+    .main-content p:last-child { margin-bottom: 0; }
+
+    /* Sidebar with embed */
+    .sidebar-widget {
+      background: #fff; border: 1px solid #ccc; border-radius: 4px;
+      overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    .widget-header {
+      background: #1a3a5c; color: #fff;
+      padding: .65rem 1rem;
+      font-family: Arial, sans-serif; font-size: .8rem;
+      font-weight: bold; letter-spacing: .05em; text-transform: uppercase;
+    }
+    .sidebar-widget iframe {
+      display: block; width: 100%; border: none;
+      height: 520px;
+    }
+
+    /* Embed code box */
+    .embed-code-section {
+      max-width: 1100px; margin: 2rem auto; padding: 0 2rem 3rem;
+    }
+    .embed-code-section h2 {
+      font-size: 1rem; color: #1a3a5c; margin-bottom: .75rem;
+      font-family: Arial, sans-serif;
+    }
+    pre {
+      background: #1a1a18; color: #a8d8a8;
+      font-family: 'Courier New', monospace; font-size: .78rem;
+      padding: 1rem 1.25rem; border-radius: 4px;
+      overflow-x: auto; line-height: 1.6; margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mock site chrome -->
+  <div class="mock-header">
+    <div class="logo">Morgan County <span>/ Official Website</span></div>
+  </div>
+  <nav class="mock-nav">
+    <a href="#">Home</a>
+    <a href="#">Government</a>
+    <a href="#">Elections</a>
+    <a href="#">Services</a>
+    <a href="#">Contact</a>
+  </nav>
+
+  <!-- Mock page content with embedded widget -->
+  <div class="page-wrap">
+    <div class="main-content">
+      <h1>Elections &amp; Voting</h1>
+      <p>
+        Morgan County residents can use the tool at right to look up their political districts
+        by address. Enter your street address to instantly see your U.S. Congressional district,
+        Utah State Senate and House districts, State School Board district, voting precinct,
+        and more.
+      </p>
+      <p>
+        Voter registration is handled through the Utah Lieutenant Governor's office.
+        Contact the Morgan County Clerk's office for questions about local elections,
+        polling locations, or absentee ballots.
+      </p>
+      <p>
+        District boundaries reflect the 2026 court-ordered congressional redistricting
+        and the 2022 post-census redistricting for state legislative districts.
+        Data is pulled live from the Utah UGRC State Geographic Information Datasource.
+      </p>
+    </div>
+
+    <div class="sidebar-widget">
+      <div class="widget-header">Find Your Districts</div>
+      <iframe src="embed.html" title="Utah District Finder"></iframe>
+    </div>
+  </div>
+
+  <!-- Embed code -->
+  <div class="embed-code-section">
+    <h2>Embed code used on this page:</h2>
+    <pre>&lt;iframe
+  src="https://srobb1.github.io/utah-district-finder/embed.html"
+  width="100%"
+  height="520"
+  frameborder="0"
+  title="Utah District Finder"&gt;
+&lt;/iframe&gt;</pre>
+  </div>
+
+</body>
+</html>

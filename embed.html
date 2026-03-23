@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Utah District Finder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1e2420;
+      --muted:  #5a6358;
+      --accent: #2d5a3d;
+      --card:   #faf9f5;
+      --border: #cdd4c8;
+      --shadow: rgba(30,36,32,0.08);
+      --radius: 4px;
+      --accent2: #6b7f6e;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Libre Baskerville', Georgia, serif;
+      background: var(--bg); color: var(--ink);
+      padding: 1rem;
+    }
+
+    /* SEARCH */
+    .field-label {
+      display: block; font-family: 'DM Mono', monospace; font-size: .7rem;
+      letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+      margin-bottom: .4rem;
+    }
+    .autocomplete-wrap { position: relative; margin-bottom: .75rem; }
+    .autocomplete-wrap input {
+      width: 100%; font-family: 'Libre Baskerville', serif; font-size: .95rem;
+      padding: .6rem .8rem; border: 1px solid var(--border);
+      border-radius: var(--radius); background: #f7f7f5; color: var(--ink);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .autocomplete-wrap input:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(45,90,61,.12);
+    }
+    .suggestions {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+      background: #fff; border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      box-shadow: 0 4px 12px var(--shadow); max-height: 200px; overflow-y: auto; display: none;
+    }
+    .suggestions.open { display: block; }
+    .suggestion-item {
+      padding: .55rem .8rem; font-size: .88rem; cursor: pointer;
+      border-bottom: 1px solid var(--border); transition: background .1s;
+    }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover, .suggestion-item.active { background: #eaf0e8; }
+    .suggestion-item .addr-main { font-weight: 600; }
+    .suggestion-item .addr-sub { font-size: .72rem; color: var(--muted); font-style: italic; }
+
+    .btn-row { display: flex; gap: .5rem; }
+    .btn-search {
+      flex: 1; font-family: 'DM Mono', monospace; font-size: .8rem; letter-spacing: .1em;
+      text-transform: uppercase; padding: .7rem; background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius); cursor: pointer; transition: background .15s;
+    }
+    .btn-search:hover { background: #1e3f2a; }
+    .btn-search:disabled { background: var(--muted); cursor: not-allowed; }
+    .btn-locate {
+      font-family: 'DM Mono', monospace; font-size: .75rem;
+      padding: .7rem .9rem; background: none; color: var(--muted);
+      border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer;
+      white-space: nowrap; transition: background .15s;
+    }
+    .btn-locate:hover { background: #f0f0ec; }
+
+    /* STATUS */
+    #status {
+      font-family: 'DM Mono', monospace; font-size: .78rem; color: var(--muted);
+      margin-top: .6rem; display: none; min-height: 1.2em;
+    }
+    #status.loading { display: block; }
+    #status.error   { display: block; color: #c0392b; }
+
+    /* RESULTS */
+    #results {
+      margin-top: 1rem; display: none;
+      opacity: 0; transform: translateY(6px); transition: opacity .3s ease, transform .3s ease;
+    }
+    #results.visible { display: block; opacity: 1; transform: translateY(0); }
+
+    .matched-addr {
+      font-family: 'DM Mono', monospace; font-size: .65rem; color: var(--muted);
+      margin-bottom: .65rem; font-style: italic;
+    }
+
+    .district-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .6rem;
+    }
+    .district-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .75rem .9rem;
+      box-shadow: 0 1px 4px var(--shadow); animation: cardIn .25s ease both;
+    }
+    .district-card.accent-left  { border-left: 3px solid var(--accent); }
+    .district-card.accent-gold  { border-left: 3px solid var(--accent2); }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .dc-label {
+      font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: .25rem;
+    }
+    .dc-value { font-size: 1.2rem; font-weight: 700; line-height: 1.1; }
+    .dc-link {
+      display: inline-block; margin-top: .3rem; font-family: 'DM Mono', monospace;
+      font-size: .6rem; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent;
+      transition: border-color .15s;
+    }
+    .dc-link:hover { border-bottom-color: var(--accent); }
+    .dc-sub { font-size: .72rem; font-style: italic; color: var(--muted); margin-top: .15rem; }
+    .no-data { font-style: italic; color: var(--muted); font-size: .82rem; }
+
+    /* ATTRIBUTION */
+    .attribution {
+      margin-top: 1rem; font-family: 'DM Mono', monospace; font-size: .6rem;
+      color: var(--muted); text-align: right;
+    }
+    .attribution a { color: var(--muted); }
+    .attribution a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <label class="field-label" for="address-input">Utah Address</label>
+  <div class="autocomplete-wrap">
+    <input type="text" id="address-input"
+      placeholder="Start typing your address…"
+      autocomplete="off" spellcheck="false" />
+    <div class="suggestions" id="suggestions"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-search" id="search-btn" onclick="lookup()">Look Up Districts</button>
+    <button class="btn-locate" onclick="useMyLocation()" title="Use my location">📍</button>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="results">
+    <div class="matched-addr" id="matched-addr"></div>
+    <div class="district-grid" id="district-grid"></div>
+  </div>
+
+  <div class="attribution">
+    <a href="https://srobb1.github.io/utah-district-finder/" target="_blank">Utah District Finder</a>
+    · Data: <a href="https://gis.utah.gov" target="_blank">Utah UGRC</a>
+  </div>
+
+<script>
+  const OWNER_DOMAIN  = 'srobb1.github.io';
+  const OWNER_API_KEY = 'ugrc-a2016088728543';
+  const isOwnerDomain = window.location.hostname === OWNER_DOMAIN;
+  const BASE          = 'https://api.mapserv.utah.gov/api/v1';
+
+  let apiKey = isOwnerDomain
+    ? OWNER_API_KEY
+    : (localStorage.getItem('ugrc_api_key') || '');
+
+  const LAYERS = [
+    {
+      label: 'U.S. Congressional', table: 'political.district_combination_areas_2026',
+      field: 'congress', accent: 'accent-left', prefix: 'District ', suffix: '',
+      linkFn: v => `https://www.congress.gov/members?q=%7B%22congress%22%3A%22119%22%2C%22state%22%3A%22UT%22%2C%22district%22%3A%22${v}%22%7D`,
+      linkLabel: 'View Rep →'
+    },
+    {
+      label: 'Utah Senate', table: 'political.district_combination_areas_2026',
+      field: 'senate', accent: 'accent-left', prefix: 'District ', suffix: '',
+      linkFn: () => 'https://senate.utah.gov/senate-roster/', linkLabel: 'Senate Roster →'
+    },
+    {
+      label: 'Utah House', table: 'political.district_combination_areas_2026',
+      field: 'house', accent: 'accent-left', prefix: 'District ', suffix: '',
+      linkFn: () => 'https://house.utleg.gov/house-members/', linkLabel: 'House Members →'
+    },
+    {
+      label: 'State School Board', table: 'political.district_combination_areas_2026',
+      field: 'school', accent: 'accent-left', prefix: 'District ', suffix: '',
+      linkFn: () => 'https://www.schools.utah.gov/board/utah/members', linkLabel: 'Utah Board →'
+    },
+    {
+      label: 'Voting Precinct', table: 'political.vista_ballot_areas',
+      field: 'precinctid', accent: 'accent-left', prefix: '', suffix: '',
+      secondaryField: 'vistaid', linkFn: null, linkLabel: null
+    },
+    {
+      label: 'County', table: 'boundaries.county_boundaries',
+      field: 'name', accent: 'accent-gold', prefix: '', suffix: ' County',
+      linkFn: null, linkLabel: null
+    },
+    {
+      label: 'Municipality', table: 'boundaries.municipal_boundaries',
+      field: 'name', accent: 'accent-gold', prefix: '', suffix: '',
+      linkFn: null, linkLabel: null, notFoundText: 'Unincorporated'
+    },
+  ];
+
+  // ── AUTOCOMPLETE ──────────────────────────────────────────────────────────────
+  let acTimer = null;
+  let selectedSuggestion = null;
+
+  function initAutocomplete() {
+    const input = document.getElementById('address-input');
+    const box   = document.getElementById('suggestions');
+
+    input.addEventListener('input', () => {
+      selectedSuggestion = null;
+      clearTimeout(acTimer);
+      const q = input.value.trim();
+      if (q.length < 5) { closeAC(); return; }
+      acTimer = setTimeout(() => fetchAC(q), 380);
+    });
+
+    input.addEventListener('keydown', e => {
+      const items  = [...box.querySelectorAll('.suggestion-item')];
+      const active = box.querySelector('.suggestion-item.active');
+      const idx    = items.indexOf(active);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        active?.classList.remove('active');
+        items[Math.min(idx + 1, items.length - 1)]?.classList.add('active');
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        active?.classList.remove('active');
+        items[Math.max(idx - 1, 0)]?.classList.add('active');
+      } else if (e.key === 'Enter') {
+        const a = box.querySelector('.suggestion-item.active');
+        if (a) { e.preventDefault(); a.click(); }
+        else { closeAC(); lookup(); }
+      } else if (e.key === 'Escape') {
+        closeAC();
+      }
+    });
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.autocomplete-wrap')) closeAC();
+    });
+  }
+
+  async function fetchAC(query) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?` +
+        `q=${encodeURIComponent(query + ', Utah, USA')}` +
+        `&format=json&addressdetails=1&limit=6&countrycodes=us` +
+        `&viewbox=-114.05,36.99,-109.04,42.0&bounded=1`;
+      const res  = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+      const data = await res.json();
+      const hits = data.filter(r => r.address?.state === 'Utah').slice(0, 5);
+      if (!hits.length) { closeAC(); return; }
+      renderAC(hits);
+    } catch { closeAC(); }
+  }
+
+  function renderAC(results) {
+    const box = document.getElementById('suggestions');
+    box.innerHTML = '';
+    results.forEach(r => {
+      const addr   = r.address || {};
+      const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
+      const city   = addr.city || addr.town || addr.village || '';
+      const zip    = addr.postcode || '';
+      const zone   = zip || city;
+      const display = r.display_name.split(',').slice(0, 3).join(',').trim();
+
+      const item = document.createElement('div');
+      item.className = 'suggestion-item';
+      item.innerHTML = `<div class="addr-main">${street || city}</div><div class="addr-sub">${display}</div>`;
+      item.addEventListener('mousedown', e => e.preventDefault());
+      item.addEventListener('click', () => {
+        selectedSuggestion = { street: street || city, zone };
+        document.getElementById('address-input').value = display;
+        closeAC();
+      });
+      box.appendChild(item);
+    });
+    box.classList.add('open');
+  }
+
+  function closeAC() {
+    const box = document.getElementById('suggestions');
+    box.classList.remove('open');
+    box.innerHTML = '';
+  }
+
+  // ── MY LOCATION ───────────────────────────────────────────────────────────────
+  async function useMyLocation() {
+    if (!navigator.geolocation) { setStatus('⚠ Geolocation not supported.', 'error'); return; }
+    setStatus('Getting your location…', 'loading');
+    navigator.geolocation.getCurrentPosition(async pos => {
+      try {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const data = await res.json();
+        const addr = data.address || {};
+        const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
+        const zone   = addr.postcode || addr.city || addr.town || '';
+        if (street && zone) {
+          selectedSuggestion = { street, zone };
+          document.getElementById('address-input').value = data.display_name.split(',').slice(0, 3).join(',').trim();
+          setStatus('', '');
+          lookup();
+        } else {
+          setStatus('⚠ Could not resolve your street address. Please type it.', 'error');
+        }
+      } catch {
+        setStatus('⚠ Reverse geocode failed. Please type your address.', 'error');
+      }
+    }, () => setStatus('⚠ Location access denied. Please type your address.', 'error'));
+  }
+
+  // ── STATUS ────────────────────────────────────────────────────────────────────
+  function setStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg; el.className = type;
+  }
+
+  // ── LOOKUP ────────────────────────────────────────────────────────────────────
+  async function lookup() {
+    let street, zone;
+    if (selectedSuggestion) {
+      ({ street, zone } = selectedSuggestion);
+    } else {
+      const raw   = document.getElementById('address-input').value.trim();
+      const parts = raw.split(',');
+      street = parts[0]?.trim() || '';
+      zone   = parts[1]?.trim() || parts[2]?.trim() || '';
+      if (!zone) zone = raw;
+    }
+
+    if (!apiKey) { setStatus('⚠ No API key configured for this domain.', 'error'); return; }
+    if (!street) { setStatus('⚠ Please enter a Utah address.', 'error'); return; }
+
+    const resultsEl = document.getElementById('results');
+    resultsEl.className = '';
+    resultsEl.style.display = 'none';
+    document.getElementById('district-grid').innerHTML = '';
+
+    const btn = document.getElementById('search-btn');
+    btn.disabled = true;
+    setStatus('Geocoding address…', 'loading');
+
+    try {
+      const geoUrl = `${BASE}/geocode/${encodeURIComponent(street)}/${encodeURIComponent(zone)}?spatialReference=4326&apiKey=${apiKey}`;
+      const geoRes  = await fetch(geoUrl);
+      const geoData = await geoRes.json();
+
+      if (geoData.status !== 200 || !geoData.result) {
+        throw new Error('Address not found. Try selecting a suggestion from the dropdown.');
+      }
+
+      const { x: lng, y: lat } = geoData.result.location;
+      document.getElementById('matched-addr').textContent = `Matched: ${geoData.result.matchAddress}`;
+      setStatus('Looking up districts…', 'loading');
+
+      const results = await Promise.allSettled(LAYERS.map(l => queryLayer(l, lng, lat)));
+
+      const grid = document.getElementById('district-grid');
+      results.forEach((result, i) => {
+        const layer = LAYERS[i];
+        const card  = document.createElement('div');
+        card.className = `district-card ${layer.accent}`;
+        card.style.animationDelay = `${i * 0.05}s`;
+
+        if (result.status === 'fulfilled' && result.value) {
+          const { value, secondary } = result.value;
+          const link = layer.linkFn
+            ? `<a class="dc-link" href="${layer.linkFn(value)}" target="_blank" rel="noopener">${layer.linkLabel}</a>`
+            : '';
+          card.innerHTML = `
+            <div class="dc-label">${layer.label}</div>
+            <div class="dc-value">${layer.prefix}${value}${layer.suffix}</div>
+            ${secondary ? `<div class="dc-sub">${secondary}</div>` : ''}
+            ${link}`;
+        } else {
+          card.innerHTML = `
+            <div class="dc-label">${layer.label}</div>
+            <div class="dc-value ${layer.notFoundText ? '' : 'no-data'}">${layer.notFoundText || '—'}</div>
+            ${layer.notFoundText ? '' : '<div class="dc-sub">Not found</div>'}`;
+        }
+        grid.appendChild(card);
+      });
+
+      setStatus('', '');
+      resultsEl.style.display = 'block';
+      requestAnimationFrame(() => requestAnimationFrame(() => resultsEl.classList.add('visible')));
+
+    } catch (err) {
+      setStatus(`⚠ ${err.message}`, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ── QUERY LAYER ───────────────────────────────────────────────────────────────
+  async function queryLayer(layer, lng, lat) {
+    const geometry = `point:[${lng},${lat}]`;
+    const fields   = layer.secondaryField ? `${layer.field},${layer.secondaryField}` : layer.field;
+    const url = `${BASE}/search/${encodeURIComponent(layer.table)}/${encodeURIComponent(fields)}` +
+                `?geometry=${encodeURIComponent(geometry)}&spatialReference=4326&apiKey=${apiKey}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (data.status === 200 && data.result?.length > 0) {
+      const attrs = data.result[0].attributes;
+      const key   = layer.field.toLowerCase();
+      let value   = attrs[key];
+      if (typeof value === 'string' && value === value.toUpperCase()) {
+        value = value.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+      }
+      const secondary = layer.secondaryField ? attrs[layer.secondaryField.toLowerCase()] || null : null;
+      return { value, secondary };
+    }
+    return null;
+  }
+
+  window.addEventListener('DOMContentLoaded', initAutocomplete);
+</script>
+</body>
+</html>
