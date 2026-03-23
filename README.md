@@ -12,6 +12,7 @@ A free civic tool that looks up every political district for any Utah address �
 |---|---|
 | [index.html](https://srobb1.github.io/utah-district-finder/) | Single address lookup |
 | [batch.html](https://srobb1.github.io/utah-district-finder/batch.html) | Batch CSV lookup — upload a list, download results |
+| [embed.html](https://srobb1.github.io/utah-district-finder/embed.html) | Lightweight widget for embedding via iframe |
 
 ---
 
@@ -98,27 +99,31 @@ No build step or dependencies required — just two HTML files.
 
 ## Embedding on another site
 
-Both tools can be embedded as iframes:
+Use `embed.html` for the cleanest iframe experience — it's a stripped-down widget with just the address input and results, no header, footer, or debug panel. Because the iframe always loads from `srobb1.github.io`, the owner API key is used automatically — no key setup needed for embedders.
 
 ```html
-<!-- Single address lookup -->
+<iframe
+  src="https://srobb1.github.io/utah-district-finder/embed.html"
+  width="100%"
+  height="520"
+  frameborder="0"
+  title="Utah District Finder">
+</iframe>
+```
+
+The full pages can also be embedded if you prefer:
+
+```html
+<!-- Full single address tool -->
 <iframe
   src="https://srobb1.github.io/utah-district-finder/"
   width="100%"
   height="800"
   frameborder="0">
 </iframe>
-
-<!-- Batch lookup -->
-<iframe
-  src="https://srobb1.github.io/utah-district-finder/batch.html"
-  width="100%"
-  height="900"
-  frameborder="0">
-</iframe>
 ```
 
-When embedded on another domain, visitors will be prompted for their own UGRC API key registered to that domain.
+See [embed-test.html](https://srobb1.github.io/utah-district-finder/embed-test.html) for a live demo of the widget embedded in a mock county website.
 
 ---
 
