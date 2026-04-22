@@ -39,17 +39,8 @@
     .masthead-rule::before, .masthead-rule::after {
       content: ''; flex: 1; height: 1px; background: var(--border);
     }
-    .header-row {
-      display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
-    }
     h1 { font-size: clamp(2rem,6vw,3rem); font-weight:700; line-height:1.1; letter-spacing:-.02em; }
     h1 em { font-style:italic; color:var(--accent); }
-    .batch-link {
-      font-family: 'DM Mono', monospace; font-size: .7rem; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--muted); text-decoration: none;
-      white-space: nowrap;
-    }
-    .batch-link:hover { color: var(--accent); }
     .subtitle { margin-top:.5rem; font-style:italic; color:var(--muted); font-size:.95rem; }
 
     /* KEY BANNER */
@@ -261,11 +252,10 @@
 
   <header>
     <div class="masthead-rule"><span>Utah Civic Tools</span></div>
-    <div class="header-row">
-      <h1>Find Your <em>Districts</em></h1>
-      <a class="batch-link" href="batch.html">Batch lookup →</a>
-    </div>
-    <p class="subtitle">Enter any Utah address to see every political district you belong to.</p>
+    <h1>Find Your <em>Districts</em></h1>
+    <p class="subtitle">Enter any Utah address to see every political district you belong to.
+      &nbsp;·&nbsp; <a href="batch.html" style="color:var(--accent);font-style:normal;font-size:.85rem;">Batch lookup →</a>
+    </p>
   </header>
 
   <div id="key-section">
@@ -417,9 +407,21 @@
   </div>
 
   <footer>
-    <span>Data: Utah UGRC / SGID — updated by the State of Utah</span>
-    <span><a href="https://gis.utah.gov" target="_blank">gis.utah.gov</a></span>
-    <span><a href="https://github.com/srobb1/utah-district-finder" target="_blank">View source on GitHub</a></span>
+    <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;width:100%;">
+      <div>
+        <img
+          src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://srobb1.github.io/utah-district-finder/&color=1e2420&bgcolor=f4f1eb"
+          alt="QR code for Utah District Finder"
+          width="80" height="80"
+          style="display:block;border-radius:2px;" />
+        <div style="margin-top:.3rem;font-size:.6rem;color:var(--muted);text-align:center;">scan to share</div>
+      </div>
+      <div style="flex:1;">
+        <div style="margin-bottom:.3rem;">Data: Utah UGRC / SGID — updated by the State of Utah</div>
+        <div><a href="https://gis.utah.gov" target="_blank">gis.utah.gov</a></div>
+        <div style="margin-top:.3rem;"><a href="https://github.com/srobb1/utah-district-finder" target="_blank">View source on GitHub</a></div>
+      </div>
+    </div>
   </footer>
 
 <script>
@@ -507,7 +509,7 @@
   // If running on the official domain, use the baked-in key silently.
   // Any other domain (forks, localhost, embeds) will prompt for their own key.
   const OWNER_DOMAIN   = 'srobb1.github.io';
-  const OWNER_API_KEY  = 'ugrc-a2016088728543';
+  const OWNER_API_KEY  = 'ugrc-2ab79aae134042';
   const isOwnerDomain  = window.location.hostname === OWNER_DOMAIN;
 
   let apiKey = isOwnerDomain
